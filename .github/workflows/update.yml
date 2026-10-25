@@ -18,14 +18,22 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Download Official Xray Core
+        run: |
+          curl -L -o xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip
+          unzip -q -o xray.zip xray
+          chmod +x xray
+
       - name: Collect Raw Configs
         run: python collector.py
 
       - name: Test, Filter Top 100 and Encode
-        run: python filter_top.py
+        run: timeout 180s python filter_top.py || true
 
       - name: Upload to Host via HTTP
         run: |
-          curl -X POST http://roomanet.50m.ir/upload.php \
-            -F "key=${{ secrets.FTP_PASSWORD }}" \
-            --form-string "data=$(cat sub.txt)"
+          if [ -f sub.txt ]; then
+            curl -s -X POST http://roomanet.50m.ir/upload.php \
+              -F "key=${{ secrets.FTP_PASSWORD }}" \
+              --form-string "data=$(cat sub.txt)"
+          fi
