@@ -7,6 +7,9 @@ import re
 SOURCES = [
     # منبع تخصصی V2RayRoot (Vless جدا شده از چنل‌های تلگرام)
     "https://raw.githubusercontent.com/V2RayRoot/V2RayConfig/main/Config/vless.txt",
+
+     # پروژه معروف تجمیع خودکار سابسکریپشن VLESS و Reality
+    "https://raw.githubusercontent.com/aiboboxx/v2rayfree/main/v2ray",
     
     # منبع بین‌المللی با آپدیت مداوم و حجم بالای کانفیگ‌های فعال
     "https://raw.githubusercontent.com/kort0881/vpn-vless-configs-russia/main/output/vless.txt",
