@@ -13,7 +13,7 @@ BRAND_NAME = "@Rooma_Net"
 HEADER_MESSAGE = "📢 عضویت در کانال: @Rooma_Net"
 
 # ۵ کشور مجاز: آمریکا، آلمان، استرالیا، ژاپن، بریتانیا
-ALLOWED_COUNTRIES = {"US", "DE", "AU", "JP", "GB"}
+ALLOWED_COUNTRIES = {"DE", "US", "NL", "JP", "GB"}
 
 socket.setdefaulttimeout(2.0)
 
