@@ -67,3 +67,4 @@ if __name__ == "__main__":
     print(f"Total unique configs fetched: {len(configs)}")
     with open("raw_configs.txt", "w", encoding="utf-8") as f:
         f.write("\n".join(configs))
+
