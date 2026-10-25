@@ -9,11 +9,11 @@ import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
 
-BRAND_NAME = "@Rooma_Net"
-HEADER_MESSAGE = "📢 عضویت در کانال: @Rooma_Net"
+BRAND_NAME = "@YourBrand"
+HEADER_MESSAGE = "📢 عضویت در کانال: @YourBrand"
 
 # ۵ کشور مجاز: آمریکا، آلمان، استرالیا، ژاپن، بریتانیا
-ALLOWED_COUNTRIES = {"DE", "PL", "NL", "IR", "GB"}
+ALLOWED_COUNTRIES = {"DE", "PL", "NL", "IR", "SG"}
 
 socket.setdefaulttimeout(2.0)
 
@@ -32,7 +32,6 @@ def get_flagEmoji(country_code):
 
 def extract_host_port(link):
     try:
-        # چون فقط vless داریم، استخراج هاست و پورت دقیق‌تر انجام می‌شود
         match = re.search(r"@([^:?/#\s]+):(\d+)", link)
         if match:
             return match.group(1).strip(), int(match.group(2))
@@ -85,7 +84,6 @@ def filter_by_allowed_countries(nodes):
 
 def rename_config(link, new_remark):
     try:
-        # بازنویسی نام نمایشی برای لینک‌های vless
         base_link = link.split("#")[0]
         return f"{base_link}#{urllib.parse.quote(new_remark)}"
     except Exception:
@@ -98,12 +96,13 @@ def main():
     except Exception:
         return
 
-    # فیلتر بسیار مهم: فقط و فقط لینک‌هایی که با vless:// شروع می‌شوند
+    # فیلتر فقط لینک‌های vless
     vless_links = [link for link in raw_links if link.startswith("vless://")]
     print(f"Total VLESS configs found: {len(vless_links)}")
 
     random.shuffle(vless_links)
-    links_to_test = vless_links[:2000] # تست روی حداکثر ۲۰۰۰ کانفیگ Vless
+    # افزایش حجم نمونه‌برداری به ۳۵۰۰ تا برای تامین ۳۰۰ کانفیگ نهایی
+    links_to_test = vless_links[:3500]
     print(f"Testing {len(links_to_test)} VLESS configs...")
 
     working = []
@@ -117,10 +116,12 @@ def main():
     print(f"Responsive VLESS configs: {len(working)}")
 
     country_filtered = filter_by_allowed_countries(working)
-    print(f"VLESS configs matching 5 countries (DE, PL, NL, IR, GB): {len(country_filtered)}")
+    print(f"VLESS configs matching 5 countries: {len(country_filtered)}")
 
     country_filtered.sort(key=lambda x: x["ping"])
-    top_nodes = country_filtered[:100]
+    
+    # تنظیم تعداد روی ۳۰۰ کانفیگ برتر
+    top_nodes = country_filtered[:300]
 
     final_configs = [
         create_fake_config(HEADER_MESSAGE),
