@@ -5,15 +5,19 @@ import urllib.request
 import socket
 import time
 import re
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import random
+from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import datetime, timezone, timedelta
 
-# نام برند، سایت یا آیدی کانال خود را اینجا بنویسید
+# تنظیمات کلی
 BRAND_NAME = "@Rooma_Net"
 HEADER_MESSAGE = "📢 عضویت در کانال: @Rooma_Net"
 
-# لیست ۵ کشور مجاز: آمریکا، آلمان، استرالیا، ژاپن، بریتانیا
+# ۵ کشور مجاز: آمریکا، آلمان، استرالیا، ژاپن، بریتانیا
 ALLOWED_COUNTRIES = {"US", "DE", "AU", "JP", "GB"}
+
+# تنظیم تایم‌اوت سراسری برای جلوگیری ۱۰۰ درصدی از گیر کردن اسکریپت
+socket.setdefaulttimeout(2.0)
 
 def get_iran_time():
     iran_tz = timezone(timedelta(hours=3, minutes=30))
@@ -29,22 +33,19 @@ def get_flagEmoji(country_code):
     return "".join(chr(127397 + ord(c)) for c in country_code.upper())
 
 def is_iran_friendly(link):
-    """فیلتر کردن کانفیگ‌هایی که شانس اتصال بالایی در اینترنت ایران دارند"""
     link_lower = link.lower()
-    # حذف پروتکل‌های قدیمی که در ایران کاملاً مسدود هستند
-    if link_lower.startswith("ssr://"):
+    if any(link_lower.startswith(p) for p in ["ssr://", "ss://"]):
         return False
-    # اولویت با کانفیگ‌های دارای TLS، Reality، WebSocket، gRPC یا Hysteria
-    good_keywords = ["security=reality", "security=tls", "type=ws", "type=grpc", "hy2://", "hysteria2://", "tuic://"]
+    # تمرکز روی پروتکل‌های قوی که در ایران کار می‌کنند (Reality و TLS/WS/gRPC)
+    good_keywords = ["security=reality", "security=tls", "type=ws", "type=grpc", "hy2://", "hysteria2://"]
     if any(k in link_lower for k in good_keywords):
         return True
-    # بررسی ساختار داخلی vmess برای اطمینان از داشتن tls یا ws
     if link_lower.startswith("vmess://"):
         try:
             b64 = link[8:]
             padded = b64 + "=" * ((4 - len(b64) % 4) % 4)
             data = json.loads(base64.b64decode(padded).decode("utf-8", errors="ignore"))
-            if data.get("tls") == "tls" or data.get("net") in ["ws", "grpc", "h2"]:
+            if data.get("tls") == "tls" or data.get("net") in ["ws", "grpc"]:
                 return True
         except Exception:
             pass
@@ -56,11 +57,11 @@ def extract_host_port(link):
             b64 = link[8:]
             padded = b64 + "=" * ((4 - len(b64) % 4) % 4)
             data = json.loads(base64.b64decode(padded).decode("utf-8", errors="ignore"))
-            return data.get("add", ""), int(data.get("port", 443))
+            return data.get("add", "").strip(), int(data.get("port", 443))
         else:
-            match = re.search(r"@([^:?/#]+):(\d+)", link)
+            match = re.search(r"@([^:?/#\s]+):(\d+)", link)
             if match:
-                return match.group(1), int(match.group(2))
+                return match.group(1).strip(), int(match.group(2))
     except Exception:
         pass
     return "", 0
@@ -70,12 +71,12 @@ def test_single_config(link):
     if not host or not port or host in ["127.0.0.1", "localhost", "0.0.0.0"]:
         return None
     try:
-        ip = socket.gethostbyname(host)
         start = time.time()
-        # دو بار تست اتصال متوالی برای اطمینان از پایدار بودن پورت سرور
-        with socket.create_connection((ip, port), timeout=2.0):
+        # اتصال مستقیم با تایم‌اوت قفل‌شکن ۱.۵ ثانیه
+        with socket.create_connection((host, port), timeout=1.5) as sock:
             ping = int((time.time() - start) * 1000)
-            if 5 < ping < 1500:
+            ip = sock.getpeername()[0]
+            if 5 < ping < 1000:
                 return {"link": link, "host": host, "ip": ip, "ping": ping}
     except Exception:
         pass
@@ -85,7 +86,6 @@ def filter_by_allowed_countries(nodes):
     ips_to_query = list({node["ip"] for node in nodes if node.get("ip")})
     ip_to_country = {}
 
-    # استعلام کشور تمام آی‌پی‌های سالم از ip-api
     for i in range(0, len(ips_to_query), 100):
         batch = ips_to_query[i:i+100]
         try:
@@ -95,7 +95,7 @@ def filter_by_allowed_countries(nodes):
                 data=req_data,
                 headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=5) as resp:
                 for item in json.loads(resp.read().decode("utf-8")):
                     ip_to_country[item.get("query")] = item.get("countryCode", "")
         except Exception as e:
@@ -104,7 +104,6 @@ def filter_by_allowed_countries(nodes):
     filtered_nodes = []
     for node in nodes:
         cc = ip_to_country.get(node["ip"], "")
-        # فقط اگر کشور جزو ۵ کشور درخواستی بود نگه داشته شود
         if cc in ALLOWED_COUNTRIES:
             flag = get_flagEmoji(cc)
             node["country_label"] = f"{flag} {cc}"
@@ -135,28 +134,32 @@ def main():
         print(f"Error reading raw_configs.txt: {e}")
         return
 
-    # ۱. غربالگری اولیه: فقط کانفیگ‌های مناسب ایران (Reality / TLS / WS)
-    iran_friendly_links = [link for link in raw_links if is_iran_friendly(link)]
-    print(f"Iran-friendly configs filtered: {len(iran_friendly_links)} out of {len(raw_links)}")
-
-    # تست حداکثر ۱۰۰۰ کانفیگ برای پیدا کردن تعداد کافی از ۵ کشور
-    links_to_test = iran_friendly_links[:1000]
+    iran_friendly = [link for link in raw_links if is_iran_friendly(link)]
+    # بر زدن لیست برای تنوع از تمام منابع و انتخاب ۴۰۰ کانفیگ برای سرعت بالا
+    random.shuffle(iran_friendly)
+    links_to_test = iran_friendly[:400]
+    print(f"Testing {len(links_to_test)} selected configs...")
 
     working = []
-    with ThreadPoolExecutor(max_workers=80) as executor:
-        futures = [executor.submit(test_single_config, link) for link in links_to_test]
-        for future in as_completed(futures):
+    executor = ThreadPoolExecutor(max_workers=50)
+    futures = [executor.submit(test_single_config, link) for link in links_to_test]
+    
+    # حداکثر ۲۵ ثانیه صبر برای اتمام تمام تست‌ها (اگر نخی گیر کرد، رها می‌شود)
+    done, not_done = wait(futures, timeout=25.0)
+    for future in done:
+        try:
             res = future.result()
             if res:
                 working.append(res)
+        except Exception:
+            pass
+    executor.shutdown(wait=False, cancel_futures=True)
 
-    print(f"Total pingable configs: {len(working)}")
+    print(f"Total responsive configs: {len(working)}")
 
-    # ۲. جداسازی فقط ۵ کشور (US, DE, AU, JP, GB)
     country_filtered = filter_by_allowed_countries(working)
-    print(f"Configs matching the 5 allowed countries: {len(country_filtered)}")
+    print(f"Configs matching US, DE, AU, JP, GB: {len(country_filtered)}")
 
-    # ۳. مرتب‌سازی بر اساس پینگ و انتخاب ۱۰۰ تای برتر
     country_filtered.sort(key=lambda x: x["ping"])
     top_nodes = country_filtered[:100]
 
