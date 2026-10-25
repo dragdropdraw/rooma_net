@@ -9,11 +9,11 @@ import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
 
-BRAND_NAME = "@YourBrand"
-HEADER_MESSAGE = "📢 عضویت در کانال: @YourBrand"
+BRAND_NAME = "@Rooma_Net"
+HEADER_MESSAGE = "📢 عضویت در کانال: @Rooma_Net"
 
 # ۵ کشور مجاز: آمریکا، آلمان، استرالیا، ژاپن، بریتانیا
-ALLOWED_COUNTRIES = {"DE", "PL", "NL", "IR", "SG"}
+ALLOWED_COUNTRIES = {"DE", "PL", "US", "IR", "SG"}
 
 socket.setdefaulttimeout(2.0)
 
