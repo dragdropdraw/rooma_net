@@ -2,34 +2,22 @@ import urllib.request
 import base64
 import re
 
-# لیست منابع (لینک‌های سابسکریپشن عمومی گیت‌هاب یا کانال‌ها)
+# منابع گلچین شده مخصوص اینترنت ایران (تست شده روی اپراتورهای ایران و کلودفلر)
 SOURCES = [
-    # ۱. مخزن 0xRadikal (بسیار باکیفیت، بروزرسانی هر ۱۵ دقیقه، فیلتر شده و سبک)
-    "https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/light/configs.txt",
-    "https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/protocols/vless.txt",
-    
-    # ۲. مخزن Mosifree (تمرکز ویژه روی پروتکل‌های ضد فیلتر Reality و Vless مناسب ایران)
+    # مخازن تخصصی Reality و Vless ضد فیلتر
     "https://raw.githubusercontent.com/Mosifree/-FREE2CONFIG/refs/heads/main/Reality",
     "https://raw.githubusercontent.com/Mosifree/-FREE2CONFIG/refs/heads/main/Vless",
+    "https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/protocols/vless.txt",
+    "https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/protocols/trojan.txt",
     
-    # ۳. مخزن Epodonios (بروزرسانی هر ۵ دقیقه - پک‌های ۲۵۰ تایی سبک)
-    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub1.txt",
-    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub2.txt",
-    
-    # ۴. مخزن Barry-Far (یکی از قدیمی‌ترین و پایدارترین منابع ساعتی)
-    "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub1.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub2.txt",
-    
-    # ۵. مخزن Delta-Kronecker (تفکیک شده بر اساس ۵۰۰ کانفیگ برتر)
-    "https://github.com/Delta-Kronecker/V2ray-Config/raw/refs/heads/main/config/batches/v2ray/batch_001.txt",
-    
-    # ۶. مخزن Matin Ghanbari (مخزن ایرانی با جمع‌آوری از کانال‌های تلگرام)
+    # مخازن ایرانی که از کانال‌های تلگرامی تست‌شده در ایران جمع‌آوری می‌کنند
+    "https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/xray/normal/mix",
     "https://raw.githubusercontent.com/matinghanbari/v2ray-configs/main/subscriptions/v2ray/super-sub.txt",
-    
-    # ۷. مخزن Mahdibland (آپدیت منظم از منابع عمومی)
-    "https://raw.githubusercontent.com/mahdibland/ShadowsocksAggregator/master/Eternity.txt"
+    "https://raw.githubusercontent.com/ALIILAPRO/v2rayNG-Config/main/sub.txt",
+    "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/reality",
+    "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/vless",
+    "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub1.txt"
 ]
-
 
 def decode_base64(data):
     try:
@@ -42,14 +30,13 @@ def decode_base64(data):
 
 def fetch_configs():
     raw_configs = set()
-    pattern = r'(vmess|vless|trojan|ss|ssr|hy2|hysteria2|tuic)://[^\s<>"]+'
+    pattern = r'^(vless|vmess|trojan)://[^\s<>"]+'
     
     for url in SOURCES:
         try:
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=15) as response:
+            with urllib.request.urlopen(req, timeout=10) as response:
                 content = response.read().decode('utf-8', errors='ignore')
-                # اگر محتوا Base64 بود دیکود شود
                 if "://" not in content:
                     content = decode_base64(content)
                 
@@ -67,4 +54,3 @@ if __name__ == "__main__":
     print(f"Total unique configs fetched: {len(configs)}")
     with open("raw_configs.txt", "w", encoding="utf-8") as f:
         f.write("\n".join(configs))
-
