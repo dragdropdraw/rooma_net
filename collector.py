@@ -5,10 +5,10 @@ import re
 # منابع گلچین شده مخصوص اینترنت ایران (تست شده روی اپراتورهای ایران و کلودفلر)
 SOURCES = [
     # مخازن تخصصی Reality و Vless ضد فیلتر
-    "https://raw.githubusercontent.com/Mosifree/-FREE2CONFIG/refs/heads/main/Reality",
-    "https://raw.githubusercontent.com/Mosifree/-FREE2CONFIG/refs/heads/main/Vless",
+    "https://raw.githubusercontent.com/miladtahanian/Config-Collector/main/mixed_iran.txt",
+    "https://raw.githubusercontent.com/iampedii/whitedns-sub/refs/heads/main/base64.txt",
     "https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/protocols/vless.txt",
-    "https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/protocols/trojan.txt",
+    "https://raw.githubusercontent.com/cbusifabcap/daily_free_vpn/refs/heads/main/sub/V2Ray.yml",
     
     # مخازن ایرانی که از کانال‌های تلگرامی تست‌شده در ایران جمع‌آوری می‌کنند
     "https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/xray/normal/mix",
@@ -16,7 +16,7 @@ SOURCES = [
     "https://raw.githubusercontent.com/ALIILAPRO/v2rayNG-Config/main/sub.txt",
     "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/reality",
     "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/vless",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/Sub1.txt"
+    "https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub3.txt"
 ]
 
 def decode_base64(data):
