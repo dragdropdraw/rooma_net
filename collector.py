@@ -6,17 +6,17 @@ import re
 # منابع فوق‌العاده قوی و آپدیت‌شده (استخراج‌شده از شبکه‌های تلگرامی و اسکنرهای فعال)
 SOURCES = [
     # منبع تخصصی V2RayRoot (Vless جدا شده از چنل‌های تلگرام)
-    "https://raw.githubusercontent.com/V2RayRoot/V2RayConfig/main/Config/vless.txt",
+    "https://raw.githubusercontent.com/miladtahanian/Config-Collector/main/mixed_iran.txt",
 
      # پروژه معروف تجمیع خودکار سابسکریپشن VLESS و Reality
-    "https://raw.githubusercontent.com/aiboboxx/v2rayfree/main/v2ray",
+    "https://raw.githubusercontent.com/iampedii/whitedns-sub/refs/heads/main/base64.txt",
     
     # منبع بین‌المللی با آپدیت مداوم و حجم بالای کانفیگ‌های فعال
-    "https://raw.githubusercontent.com/kort0881/vpn-vless-configs-russia/main/output/vless.txt",
+    "https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub3.txt",
     
     # مخازن کمکی معتبر
-    "https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/xray/normal/vless",
-    "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/vless"
+    "https://raw.githubusercontent.com/cbusifabcap/daily_free_vpn/refs/heads/main/sub/V2Ray.yml",
+    "https://sub.plenix.cyou"
 ]
 
 def decode_base64(data):
