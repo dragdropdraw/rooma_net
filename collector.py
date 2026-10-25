@@ -3,13 +3,17 @@ import base64
 import json
 import re
 
-# منابع معتبر که کانفیگ‌های پاک و ضد فیلتر (Reality و Cloudflare) منتشر می‌کنند
+# منابع فوق‌العاده قوی و آپدیت‌شده (استخراج‌شده از شبکه‌های تلگرامی و اسکنرهای فعال)
 SOURCES = [
-    "https://raw.githubusercontent.com/Mosifree/-FREE2CONFIG/refs/heads/main/Vless",
-    "https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/protocols/vless.txt",
-    "https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/xray/normal/mix",
-    "https://raw.githubusercontent.com/matinghanbari/v2ray-configs/main/subscriptions/v2ray/super-sub.txt",
-    "https://raw.githubusercontent.com/ALIILAPRO/v2rayNG-Config/main/sub.txt"
+    # منبع تخصصی V2RayRoot (Vless جدا شده از چنل‌های تلگرام)
+    "https://raw.githubusercontent.com/V2RayRoot/V2RayConfig/main/Config/vless.txt",
+    
+    # منبع بین‌المللی با آپدیت مداوم و حجم بالای کانفیگ‌های فعال
+    "https://raw.githubusercontent.com/kort0881/vpn-vless-configs-russia/main/output/vless.txt",
+    
+    # مخازن کمکی معتبر
+    "https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/xray/normal/vless",
+    "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/vless"
 ]
 
 def decode_base64(data):
@@ -28,14 +32,13 @@ def fetch_configs():
     for url in SOURCES:
         try:
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=12) as response:
+            with urllib.request.urlopen(req, timeout=15) as response:
                 content = response.read().decode('utf-8', errors='ignore')
                 if "://" not in content:
                     content = decode_base64(content)
                 
                 for line in content.splitlines():
                     line = line.strip()
-                    # فقط استخراج لینک‌های vless
                     if re.match(pattern, line):
                         raw_configs.add(line)
         except Exception as e:
