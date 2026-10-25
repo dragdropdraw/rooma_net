@@ -20,9 +20,8 @@ jobs:
       - name: Collect Raw Configs
         run: python collector.py
 
-      - name: Download & Run LiteSpeedTest
+      - name: Download and Run LiteSpeedTest
         run: |
-          # پیدا کردن هوشمند لینک آخرین نسخه LiteSpeedTest بدون خطا
           DOWNLOAD_URL=$(curl -s https://api.github.com/repos/xxf098/LiteSpeedTest/releases/latest | grep "browser_download_url.*linux-amd64.*\.gz" | cut -d '"' -f 4 | head -n 1)
           curl -L -o lite.gz "$DOWNLOAD_URL"
           gzip -df lite.gz
@@ -30,10 +29,10 @@ jobs:
           echo '{"group":"job","speedtestMode":"pingonly","pingMethod":"googleping","sortMethod":"rspeed","concurrency":50,"testMode":2,"subscription":"raw_configs.txt","timeout":8,"language":"en","fontSize":24,"theme":"rainbow","unique":true,"outputMode":0}' > config.json
           ./lite --config config.json --test raw_configs.txt || true
 
-      - name: Filter Top 100 & Encode
+      - name: Filter Top 100 and Encode
         run: python filter_top.py
 
-      -       - name: Upload to Host via FTP
+      - name: Upload to Host via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -42,7 +41,6 @@ jobs:
           local-dir: ./
           server-dir: ./
           dangerous-clean-slate: false
-
           exclude: |
             **/.git*
             **/.git*/**
