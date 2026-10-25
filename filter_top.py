@@ -12,6 +12,9 @@ from datetime import datetime, timezone, timedelta
 BRAND_NAME = "@Rooma_Net"
 HEADER_MESSAGE = "📢 عضویت در کانال: @Rooma_Net"
 
+# لیست ۵ کشور مجاز: آمریکا، آلمان، استرالیا، ژاپن، بریتانیا
+ALLOWED_COUNTRIES = {"US", "DE", "AU", "JP", "GB"}
+
 def get_iran_time():
     iran_tz = timezone(timedelta(hours=3, minutes=30))
     return datetime.now(iran_tz).strftime("%Y/%m/%d - %H:%M")
@@ -24,6 +27,28 @@ def get_flagEmoji(country_code):
     if not country_code or len(country_code) != 2:
         return "🌐"
     return "".join(chr(127397 + ord(c)) for c in country_code.upper())
+
+def is_iran_friendly(link):
+    """فیلتر کردن کانفیگ‌هایی که شانس اتصال بالایی در اینترنت ایران دارند"""
+    link_lower = link.lower()
+    # حذف پروتکل‌های قدیمی که در ایران کاملاً مسدود هستند
+    if link_lower.startswith("ssr://"):
+        return False
+    # اولویت با کانفیگ‌های دارای TLS، Reality، WebSocket، gRPC یا Hysteria
+    good_keywords = ["security=reality", "security=tls", "type=ws", "type=grpc", "hy2://", "hysteria2://", "tuic://"]
+    if any(k in link_lower for k in good_keywords):
+        return True
+    # بررسی ساختار داخلی vmess برای اطمینان از داشتن tls یا ws
+    if link_lower.startswith("vmess://"):
+        try:
+            b64 = link[8:]
+            padded = b64 + "=" * ((4 - len(b64) % 4) % 4)
+            data = json.loads(base64.b64decode(padded).decode("utf-8", errors="ignore"))
+            if data.get("tls") == "tls" or data.get("net") in ["ws", "grpc", "h2"]:
+                return True
+        except Exception:
+            pass
+    return False
 
 def extract_host_port(link):
     try:
@@ -42,36 +67,27 @@ def extract_host_port(link):
 
 def test_single_config(link):
     host, port = extract_host_port(link)
-    if not host or not port or host == "127.0.0.1":
+    if not host or not port or host in ["127.0.0.1", "localhost", "0.0.0.0"]:
         return None
     try:
+        ip = socket.gethostbyname(host)
         start = time.time()
-        with socket.create_connection((host, port), timeout=2.5):
+        # دو بار تست اتصال متوالی برای اطمینان از پایدار بودن پورت سرور
+        with socket.create_connection((ip, port), timeout=2.0):
             ping = int((time.time() - start) * 1000)
-            if 5 < ping < 2000:
-                return {"link": link, "host": host, "ping": ping}
+            if 5 < ping < 1500:
+                return {"link": link, "host": host, "ip": ip, "ping": ping}
     except Exception:
         pass
     return None
 
-def resolve_countries(nodes):
-    host_to_ip = {}
-    ips_to_query = set()
-
-    for node in nodes:
-        host = node["host"]
-        if host and host not in host_to_ip:
-            try:
-                ip = socket.gethostbyname(host)
-                host_to_ip[host] = ip
-                ips_to_query.add(ip)
-            except Exception:
-                host_to_ip[host] = None
-
+def filter_by_allowed_countries(nodes):
+    ips_to_query = list({node["ip"] for node in nodes if node.get("ip")})
     ip_to_country = {}
-    ip_list = list(ips_to_query)
-    for i in range(0, len(ip_list), 100):
-        batch = ip_list[i:i+100]
+
+    # استعلام کشور تمام آی‌پی‌های سالم از ip-api
+    for i in range(0, len(ips_to_query), 100):
+        batch = ips_to_query[i:i+100]
         try:
             req_data = json.dumps([{"query": ip, "fields": "countryCode,query"} for ip in batch]).encode("utf-8")
             req = urllib.request.Request(
@@ -82,16 +98,19 @@ def resolve_countries(nodes):
             with urllib.request.urlopen(req, timeout=10) as resp:
                 for item in json.loads(resp.read().decode("utf-8")):
                     ip_to_country[item.get("query")] = item.get("countryCode", "")
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"GeoIP error: {e}")
 
-    host_to_flag = {}
-    for host, ip in host_to_ip.items():
-        cc = ip_to_country.get(ip, "")
-        flag = get_flagEmoji(cc)
-        host_to_flag[host] = f"{flag} {cc}" if cc else "🌐 UNK"
+    filtered_nodes = []
+    for node in nodes:
+        cc = ip_to_country.get(node["ip"], "")
+        # فقط اگر کشور جزو ۵ کشور درخواستی بود نگه داشته شود
+        if cc in ALLOWED_COUNTRIES:
+            flag = get_flagEmoji(cc)
+            node["country_label"] = f"{flag} {cc}"
+            filtered_nodes.append(node)
 
-    return host_to_flag
+    return filtered_nodes
 
 def rename_config(link, new_remark):
     try:
@@ -116,23 +135,30 @@ def main():
         print(f"Error reading raw_configs.txt: {e}")
         return
 
-    # تست حداکثر ۶۰۰ کانفیگ به صورت همزمان با سرعت بالا
-    links_to_test = raw_links[:600]
-    print(f"Testing {len(links_to_test)} configs...")
+    # ۱. غربالگری اولیه: فقط کانفیگ‌های مناسب ایران (Reality / TLS / WS)
+    iran_friendly_links = [link for link in raw_links if is_iran_friendly(link)]
+    print(f"Iran-friendly configs filtered: {len(iran_friendly_links)} out of {len(raw_links)}")
+
+    # تست حداکثر ۱۰۰۰ کانفیگ برای پیدا کردن تعداد کافی از ۵ کشور
+    links_to_test = iran_friendly_links[:1000]
 
     working = []
-    with ThreadPoolExecutor(max_workers=60) as executor:
+    with ThreadPoolExecutor(max_workers=80) as executor:
         futures = [executor.submit(test_single_config, link) for link in links_to_test]
         for future in as_completed(futures):
             res = future.result()
             if res:
                 working.append(res)
 
-    print(f"Working configs found: {len(working)}")
-    working.sort(key=lambda x: x["ping"])
-    top_nodes = working[:100]
+    print(f"Total pingable configs: {len(working)}")
 
-    host_flags = resolve_countries(top_nodes)
+    # ۲. جداسازی فقط ۵ کشور (US, DE, AU, JP, GB)
+    country_filtered = filter_by_allowed_countries(working)
+    print(f"Configs matching the 5 allowed countries: {len(country_filtered)}")
+
+    # ۳. مرتب‌سازی بر اساس پینگ و انتخاب ۱۰۰ تای برتر
+    country_filtered.sort(key=lambda x: x["ping"])
+    top_nodes = country_filtered[:100]
 
     final_configs = [
         create_fake_config(HEADER_MESSAGE),
@@ -140,8 +166,7 @@ def main():
     ]
 
     for idx, node in enumerate(top_nodes, start=1):
-        country_info = host_flags.get(node["host"], "🌐 UNK")
-        new_name = f"{country_info} | ⚡ {node['ping']}ms | #{idx} | {BRAND_NAME}"
+        new_name = f"{node['country_label']} | ⚡ {node['ping']}ms | #{idx} | {BRAND_NAME}"
         final_configs.append(rename_config(node["link"], new_name))
 
     raw_text = "\n".join(final_configs)
