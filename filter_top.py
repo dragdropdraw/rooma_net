@@ -13,7 +13,7 @@ BRAND_NAME = "@Rooma_Net"
 HEADER_MESSAGE = "📢 عضویت در کانال: @Rooma_Net"
 
 # ۵ کشور مجاز: آمریکا، آلمان، استرالیا، ژاپن، بریتانیا
-ALLOWED_COUNTRIES = {"DE", "PL", "NL", "IR", "GB"}
+ALLOWED_COUNTRIES = {"US", "DE", "AU", "JP", "GB"}
 
 socket.setdefaulttimeout(2.0)
 
@@ -32,15 +32,10 @@ def get_flagEmoji(country_code):
 
 def extract_host_port(link):
     try:
-        if link.startswith("vmess://"):
-            b64 = link[8:]
-            padded = b64 + "=" * ((4 - len(b64) % 4) % 4)
-            data = json.loads(base64.b64decode(padded).decode("utf-8", errors="ignore"))
-            return data.get("add", "").strip(), int(data.get("port", 443))
-        else:
-            match = re.search(r"@([^:?/#\s]+):(\d+)", link)
-            if match:
-                return match.group(1).strip(), int(match.group(2))
+        # چون فقط vless داریم، استخراج هاست و پورت دقیق‌تر انجام می‌شود
+        match = re.search(r"@([^:?/#\s]+):(\d+)", link)
+        if match:
+            return match.group(1).strip(), int(match.group(2))
     except Exception:
         pass
     return "", 0
@@ -90,16 +85,9 @@ def filter_by_allowed_countries(nodes):
 
 def rename_config(link, new_remark):
     try:
-        if link.startswith("vmess://"):
-            b64 = link[8:]
-            padded = b64 + "=" * ((4 - len(b64) % 4) % 4)
-            data = json.loads(base64.b64decode(padded).decode("utf-8", errors="ignore"))
-            data["ps"] = new_remark
-            new_b64 = base64.b64encode(json.dumps(data, ensure_ascii=False).encode("utf-8")).decode("utf-8")
-            return f"vmess://{new_b64}"
-        else:
-            base_link = link.split("#")[0]
-            return f"{base_link}#{urllib.parse.quote(new_remark)}"
+        # بازنویسی نام نمایشی برای لینک‌های vless
+        base_link = link.split("#")[0]
+        return f"{base_link}#{urllib.parse.quote(new_remark)}"
     except Exception:
         return link
 
@@ -110,10 +98,13 @@ def main():
     except Exception:
         return
 
-    random.shuffle(raw_links)
-    # تست همزمان روی ۱۵۰۰ کانفیگ برای اینکه حتماً ۱۰۰ کانفیگ عالی از ۵ کشور پیدا شود
-    links_to_test = raw_links[:1500]
-    print(f"Testing {len(links_to_test)} configs...")
+    # فیلتر بسیار مهم: فقط و فقط لینک‌هایی که با vless:// شروع می‌شوند
+    vless_links = [link for link in raw_links if link.startswith("vless://")]
+    print(f"Total VLESS configs found: {len(vless_links)}")
+
+    random.shuffle(vless_links)
+    links_to_test = vless_links[:2000] # تست روی حداکثر ۲۰۰۰ کانفیگ Vless
+    print(f"Testing {len(links_to_test)} VLESS configs...")
 
     working = []
     with ThreadPoolExecutor(max_workers=80) as executor:
@@ -123,10 +114,10 @@ def main():
             if res:
                 working.append(res)
 
-    print(f"Responsive configs found: {len(working)}")
+    print(f"Responsive VLESS configs: {len(working)}")
 
     country_filtered = filter_by_allowed_countries(working)
-    print(f"Configs matching 5 countries (DE, PL, NL, IR, GB): {len(country_filtered)}")
+    print(f"VLESS configs matching 5 countries (US, DE, AU, JP, GB): {len(country_filtered)}")
 
     country_filtered.sort(key=lambda x: x["ping"])
     top_nodes = country_filtered[:100]
@@ -146,7 +137,7 @@ def main():
     with open("sub.txt", "w", encoding="utf-8") as f:
         f.write(b64_text)
 
-    print(f"Successfully saved {len(top_nodes)} top configs to sub.txt!")
+    print(f"Successfully saved {len(top_nodes)} top VLESS configs to sub.txt!")
 
 if __name__ == "__main__":
     main()
