@@ -9,8 +9,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
 
 # نام برند، سایت یا آیدی کانال خود را اینجا بنویسید
-BRAND_NAME = "@YourBrand"
-HEADER_MESSAGE = "📢 عضویت در کانال: @YourBrand"
+BRAND_NAME = "@Rooma_Net"
+HEADER_MESSAGE = "📢 عضویت در کانال: @Rooma_Net"
 
 def get_iran_time():
     iran_tz = timezone(timedelta(hours=3, minutes=30))
