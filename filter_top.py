@@ -13,7 +13,7 @@ BRAND_NAME = "@Rooma_Net"
 HEADER_MESSAGE = "📢 عضویت در کانال: @Rooma_Net"
 
 # ۵ کشور مجاز: آمریکا، آلمان، استرالیا، ژاپن، بریتانیا
-ALLOWED_COUNTRIES = {"DE", "PL", "NL", "JP", "GB"}
+ALLOWED_COUNTRIES = {"DE", "PL", "NL", "IR", "GB"}
 
 socket.setdefaulttimeout(2.0)
 
@@ -126,7 +126,7 @@ def main():
     print(f"Responsive configs found: {len(working)}")
 
     country_filtered = filter_by_allowed_countries(working)
-    print(f"Configs matching 5 countries (US, DE, AU, JP, GB): {len(country_filtered)}")
+    print(f"Configs matching 5 countries (DE, PL, NL, IR, GB): {len(country_filtered)}")
 
     country_filtered.sort(key=lambda x: x["ping"])
     top_nodes = country_filtered[:100]
