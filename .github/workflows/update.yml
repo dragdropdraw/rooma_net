@@ -24,18 +24,8 @@ jobs:
       - name: Test, Filter Top 100 and Encode
         run: python filter_top.py
 
-      - name: Upload to Host via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./
-          server-dir: ./
-          timeout: 30000
-          dangerous-clean-slate: false
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/raw_configs.txt
-            **/*.py
+      - name: Upload to Host via HTTP
+        run: |
+          curl -X POST http://roomanet.50m.ir/upload.php \
+            -F "key=${{ secrets.FTP_PASSWORD }}" \
+            --form-string "data=$(cat sub.txt)"
