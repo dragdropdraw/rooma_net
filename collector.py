@@ -9,10 +9,10 @@ SOURCES = [
     "https://raw.githubusercontent.com/miladtahanian/Config-Collector/main/mixed_iran.txt",
 
      # پروژه معروف تجمیع خودکار سابسکریپشن VLESS و Reality
-    "https://raw.githubusercontent.com/iampedii/whitedns-sub/refs/heads/main/base64.txt",
+    "https://ProxyArc.kral.cc.cd",
     
     # منبع بین‌المللی با آپدیت مداوم و حجم بالای کانفیگ‌های فعال
-    "https://raw.githubusercontent.com/barry-far/V2ray-config/main/Sub3.txt",
+    "https://sub-generator-11249e.drawdrag7.workers.dev/sub/0664d5ea",
     
     # مخازن کمکی معتبر
     "https://raw.githubusercontent.com/cbusifabcap/daily_free_vpn/refs/heads/main/sub/V2Ray.yml",
